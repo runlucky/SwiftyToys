@@ -28,3 +28,9 @@ public struct Log: Codable {
         case error   = "E"
     }
 }
+
+extension Log: Identifiable {
+    public var id: String {
+        timestamp.toString(.UTC, format: "yyyy-MM-dd_HH-mm-ss.SSS") .description + message
+    }
+}
