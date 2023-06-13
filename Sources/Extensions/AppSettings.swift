@@ -1,5 +1,8 @@
 import Foundation
+
+#if canImport(UIKit)
 import UIKit
+#endif
 
 public final class AppSettings {
     public static let shared = AppSettings()
@@ -11,8 +14,13 @@ public final class AppSettings {
         if let uuid = UserDefaults.standard.string(forKey: "AppSettings.uuid") {
             return uuid
         }
+        
+        #if canImport(UIKit)
+        let uuid = (UIKit.UIDevice.current.identifierForVendor ?? UUID()).uuidString.suffix(4).description
+        #else
+        let uuid = UUID().uuidString.suffix(4).description
+        #endif
 
-        let uuid = (UIDevice.current.identifierForVendor ?? UUID()).uuidString.suffix(4).description
         UserDefaults.standard.set(uuid, forKey: "AppSettings.uuid")
         return uuid
     }

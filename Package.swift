@@ -12,9 +12,7 @@ let package = Package(
     ],
     
     products: [
-        .library(name: "Storage", targets: ["Storage"]),
-        .library(name: "UIToys", targets: ["UIToys"]),
-        .library(name: "SwiftyExtensions", targets: ["SwiftyExtensions"]),
+        .library(name: "SwiftyToys", targets: ["SwiftyToys"]),
     ],
 
     dependencies: [],
@@ -22,8 +20,6 @@ let package = Package(
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
-        .target(name: "Storage", dependencies: []),
-        .target(name: "UIToys", dependencies: []),
-        .target(name: "SwiftyExtensions", dependencies: []),
+        .target(name: "SwiftyToys", dependencies: [], path: "Sources"),
     ]
 )

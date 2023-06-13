@@ -1,5 +1,6 @@
 import SwiftUI
 
+#if canImport(UIKit)
 extension Color {
     /// テーブルViewなどグループ化されたUIのメイン背景色
     public static var groupedBackground: Color { Color(.systemGroupedBackground) }
@@ -24,3 +25,5 @@ extension Color {
     public static var textLink: Color { Color(.link)}
 
 }
+
+#endif
