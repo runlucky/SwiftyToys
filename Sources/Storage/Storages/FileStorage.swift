@@ -43,7 +43,7 @@ public struct FileStorage: IStorage {
     }
     
     private func createDirectoryIfNeeded(_ url: URL) throws {
-        guard !fileManager.fileExists(atPath: url.path) else { return }
+        if fileManager.fileExists(atPath: url.path) { return }
         try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
     }
 
