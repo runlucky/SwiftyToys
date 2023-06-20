@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 
 public struct LogView: View {
-    @StateObject private var viewModel = LogViewModel()
+    @StateObject private var viewModel = Logger.shared
     @State private var showSheet = false
     
     @AppStorage("LogSetting.level") private var logLevel: LogLevel = .defaultItem
@@ -12,14 +12,12 @@ public struct LogView: View {
     public init() {}
     
     public var body: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button(systemName: "gear") { showSheet = true }
-                    .padding(10)
-            }
-            
+        NavigationView {
             List {
+                if viewModel.logs.isEmpty {
+                    Text("no content...")
+                }
+                
                 ForEach(viewModel.logs) { log in
                     if showDebugLog(log) {
                         Text(getText(log))
@@ -28,10 +26,15 @@ public struct LogView: View {
                     }
                 }
             }
+            .navigationBarTitle(Text("ログ"))
+            .navigationBarItems(trailing:
+                Button(systemName: "gear") { showSheet = true }
+                    .padding(10)
+            )
             .environment(\.defaultMinListRowHeight, 12)
         }
         .sheet(isPresented: $showSheet) {
-            LogSettingView($showSheet, viewModel: viewModel)
+            LogSettingView($showSheet)
         }
     }
     

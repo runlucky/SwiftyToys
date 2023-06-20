@@ -1,13 +1,27 @@
 import Foundation
 import Combine
 
-public struct Logger {
-    private static let _publisher = PassthroughSubject<Log, Never>()
-    public static var publisher: AnyPublisher<Log, Never> {
+public final class Logger: ObservableObject {
+    @Published internal var logs: [Log] = []
+    private var subscribers = Set<AnyCancellable>()
+
+    private let _publisher = PassthroughSubject<Log, Never>()
+    public var publisher: AnyPublisher<Log, Never> {
         _publisher.eraseToAnyPublisher()
     }
+    
+    
+    public static let shared = Logger()
+    private init() {
+        publisher.sink { log in
+            self.logs.append(log)
+            self.fileLog(log)
+            self.consoleLog(log)
+        }
+        .store(in: &subscribers)
+    }
 
-    fileprivate static func log(logLevel: Log.Level, file: String, function: String, line: Int, message: String, allowDuplicate: Bool) {
+    fileprivate func log(logLevel: Log.Level, file: String, function: String, line: Int, message: String, allowDuplicate: Bool) {
         let ban: Bool = queue.sync {
             if 200 < recentLogs.count {
                 recentLogs.removeFirst()
@@ -29,11 +43,74 @@ public struct Logger {
         _publisher.send(Log(timestamp: Date(), level: logLevel, function: function, file: file, line: line, message: message))
     }
 
-    private static var recentLogs: [String] = []
-    private static let queue = DispatchQueue(label: "Infrastructure.Logger")
+    private var recentLogs: [String] = []
+    private let queue = DispatchQueue(label: "Infrastructure.Logger")
+    
+    internal func clearOnMemoryLogs() {
+        self.logs = []
+    }
+    
+    internal func deleteAllLogs() {
+        try? URL.logs.delete()
+        try? URL.logsBackup.delete()
+        self.logs = []
+    }
+    
+    internal func getLogURL() -> [URL] {
+        if FileManager.default.fileExists(atPath: URL.logsBackup.path) {
+            return [.logs, .logsBackup]
+        }
+        return [.logs]
+    }
+
 }
+
+extension Logger {
+    private func fileLog(_ log: Log) {
+        let text = "\(log.timestamp.toString(.UTC, format: "yyyy-MM-dd HH:mm:ss.SSS")), \(log.level.rawValue), \(log.file), \(log.line), \(log.function), \(log.message)"
+        
+        if sizeCheck(fileUrl: URL.logs) ?? 0 >= UInt64(10.MB) {
+            move(from: URL.logs, dest: URL.logsBackup)
+        }
+        guard let stream = OutputStream(url: URL.logs, append: true),
+              let text = (text + "\n").data(using: .utf8) else { return }
+        
+        stream.open()
+        defer { stream.close() }
+        
+        text.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
+            if let address = buffer.bindMemory(to: UInt8.self).baseAddress {
+                stream.write(address, maxLength: buffer.count)
+            }
+        }
+    }
+    
+    private func sizeCheck(fileUrl: URL) -> UInt64? {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: fileUrl.path)
+        return attributes?[FileAttributeKey.size] as? UInt64
+    }
+    
+    private func move(from: URL, dest: URL) {
+        do {
+            try dest.delete()
+            try FileManager.default.moveItem(at: from, to: dest)
+        } catch {
+            logging(.warning, "ファイルの移動に失敗しました: \(error.dump()), from: \(from.path), dest: \(dest.path)")
+        }
+    }
+    
+    private func consoleLog(_ log: Log) {
+        print("\(log.timestamp.toString(.UTC, format: "yyyy-MM-dd HH:mm:ss.SSS")), \(log.level.rawValue), \(log.file), \(log.line), \(log.function), \(log.message)")
+    }
+}
+
+extension URL {
+    fileprivate static var logs: URL { root.appendingPathComponent("logs.txt") }
+    fileprivate static var logsBackup: URL { root.appendingPathComponent("logs_old.txt") }
+}
+
 
 /// allowDuplicate = false にすると、直近200件のログに同じ内容があれば処理をスキップします。
 public func logging(_ level: Log.Level, file: String = #file, function: String = #function, line: Int = #line, _ message: String, allowDuplicate: Bool = true) {
-    Logger.log(logLevel: level, file: file, function: function, line: line, message: message, allowDuplicate: allowDuplicate)
+    Logger.shared.log(logLevel: level, file: file, function: function, line: line, message: message, allowDuplicate: allowDuplicate)
 }

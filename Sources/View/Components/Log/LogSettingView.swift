@@ -1,7 +1,7 @@
 import SwiftUI
 
 internal struct LogSettingView: View {
-    private let viewModel: LogViewModel
+    private let viewModel = Logger.shared
     @State private var showShareSheet = false
     @Binding private var show: Bool
 
@@ -10,9 +10,8 @@ internal struct LogSettingView: View {
     @AppStorage("LogSetting.date") private var logDate: LogDate = .defaultItem
 
 
-    internal init(_ show: Binding<Bool>, viewModel: LogViewModel) {
+    internal init(_ show: Binding<Bool>) {
         self._show = show
-        self.viewModel = viewModel
     }
 
     internal var body: some View {
@@ -31,7 +30,7 @@ internal struct LogSettingView: View {
             }
 
             Button("表示クリア") {
-                viewModel.clearDisplay()
+                viewModel.clearOnMemoryLogs()
                 show = false
             }
 
