@@ -1,7 +1,7 @@
 import Foundation
 
 /// 標準ファイル入出力を使用したストレージです
-public struct FileStorage: IStorage {
+public struct FileStorage {
     private let fileManager: FileManager
     private let root: URL
     
@@ -12,6 +12,17 @@ public struct FileStorage: IStorage {
         try? createDirectoryIfNeeded(root)
     }
     
+    private func createDirectoryIfNeeded(_ url: URL) throws {
+        if fileManager.fileExists(atPath: url.path) { return }
+        try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+    }
+
+    public func getURL(key: String) -> URL {
+        root.appendingPathComponent(key)
+    }
+}
+
+extension FileStorage: IStorage {
     public func get<T: Codable>(key: String, type: T.Type) throws -> T {
         let url = root.appendingPathComponent(key)
         guard fileManager.fileExists(atPath: url.path) else { throw StorageError.notFound(key: key) }
@@ -41,10 +52,4 @@ public struct FileStorage: IStorage {
         let files = try fileManager.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
         try files.forEach { try fileManager.removeItem(at: $0) }
     }
-    
-    private func createDirectoryIfNeeded(_ url: URL) throws {
-        if fileManager.fileExists(atPath: url.path) { return }
-        try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
-    }
-
 }

@@ -32,6 +32,7 @@ public final class AppSettings {
     /// アプリのビルド番号
     public var buildNumber: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "不明" }
     
+    /// アプリの有効期限
     public var expirationDate: Date? {
       guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
             let data = try? Data(contentsOf: url),
