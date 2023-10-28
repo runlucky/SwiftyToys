@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  
-//
-//  Created by Kakeru Fukuda on 2023/06/13.
-//
-
 import Foundation
 
 extension TimeZone {

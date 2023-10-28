@@ -16,9 +16,12 @@ extension Color {
     /// 2次背景色の上に重ねる3次背景色
     public static var backgroundTertiary: Color { Color(.tertiarySystemBackground) }
 
-    
+    /// メインのテキスト色
+    public static var text: Color { Color(.label) }
+    /// 2次コンテンツのテキスト色
+    public static var textSecondary: Color { Color(.secondaryLabel) }
     /// 3次コンテンツのテキスト色
-    public static var tertiary: Color { Color(.tertiaryLabel) }
+    public static var textTertiary: Color { Color(.tertiaryLabel) }
     /// プレースホルダーのテキスト色
     public static var textPlaceholder: Color { Color(.placeholderText)}
     /// リンクのテキスト色
