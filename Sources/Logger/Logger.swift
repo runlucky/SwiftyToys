@@ -13,7 +13,9 @@ public final class Logger: ObservableObject {
     
     public static let shared = Logger()
     private init() {
-        publisher.sink { log in
+        publisher
+            .receive(on: DispatchQueue.main)
+            .sink { log in
             self.logs.append(log)
             self.fileLog(log)
             self.consoleLog(log)
