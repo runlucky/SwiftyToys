@@ -1,7 +1,7 @@
 import Foundation
 
 /// Keychainを使用したストレージです
-public class KeychainStorage: IStorage {
+public class KeychainStorage {
     private let bundleIdentifier: String
     private let account: String
     
@@ -10,6 +10,56 @@ public class KeychainStorage: IStorage {
     public init(bundleIdentifier: String, account: String) {
         self.bundleIdentifier = bundleIdentifier
         self.account = account
+    }
+    
+    private func delete(_ query: CFDictionary) throws {
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query, &item)
+        
+        switch status {
+        case errSecItemNotFound:
+            return
+
+        case errSecSuccess:
+            let status = SecItemDelete(query)
+            if status != errSecSuccess { throw KeychainError.deleteError(error: status) }
+
+        default:
+            throw KeychainError.unhandled(error: status)
+        }
+    }
+}
+
+extension KeychainStorage: IStorage {
+    public func upsert<T: Codable>(key: String, value: T) throws {
+        let data = try JSONEncoder().encode(value)
+        
+        let query: [String: Any] = [
+            kSecClass              as String: kSecClassGenericPassword,
+            kSecAttrLabel          as String: bundleIdentifier,
+            kSecAttrService        as String: "\(bundleIdentifier).\(key)",
+            kSecAttrAccount        as String: account,
+            kSecValueData          as String: data,
+            kSecAttrAccessible     as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+            kSecAttrSynchronizable as String: kCFBooleanFalse!
+        ]
+        
+        let status = SecItemCopyMatching(query as CFDictionary, nil)
+        
+        switch status {
+        case errSecItemNotFound:
+            SecItemAdd(query as CFDictionary, nil)
+            
+        case errSecSuccess:
+            SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+            
+        default:
+            throw KeychainError.unhandled(error: status)
+        }
+    }
+    
+    public func upsert<T: Codable>(folder: String, key: String, value: T) throws {
+        try upsert(key: "\(folder).\(key)", value: value)
     }
     
     public func get<T: Codable>(key: String, type: T.Type) throws -> T {
@@ -43,34 +93,15 @@ public class KeychainStorage: IStorage {
             throw KeychainError.unhandled(error: status)
         }
     }
-    
-    public func upsert<T: Codable>(key: String, value: T) throws {
-        let data = try JSONEncoder().encode(value)
-        
-        let query: [String: Any] = [
-            kSecClass              as String: kSecClassGenericPassword,
-            kSecAttrLabel          as String: bundleIdentifier,
-            kSecAttrService        as String: "\(bundleIdentifier).\(key)",
-            kSecAttrAccount        as String: account,
-            kSecValueData          as String: data,
-            kSecAttrAccessible     as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecAttrSynchronizable as String: kCFBooleanFalse!
-        ]
-        
-        let status = SecItemCopyMatching(query as CFDictionary, nil)
-        
-        switch status {
-        case errSecItemNotFound:
-            SecItemAdd(query as CFDictionary, nil)
-            
-        case errSecSuccess:
-            SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
-            
-        default:
-            throw KeychainError.unhandled(error: status)
-        }
-        
+
+    public func get<T: Codable>(folder: String, key: String, type: T.Type) throws -> T {
+        try get(key: "\(folder).\(key)", type: type)
     }
+    
+    public func gets<T: Codable>(folder: String, type: T.Type) throws -> [T] {
+        throw KeychainError.notSupported
+    }
+    
 
     public func delete(key: String) throws {
         let query: [String: Any] = [
@@ -82,6 +113,14 @@ public class KeychainStorage: IStorage {
         try delete(query as CFDictionary)
     }
     
+    public func delete(folder: String, key: String) throws {
+        try delete(key: "\(folder).\(key)")
+    }
+    
+    public func deletes(folder: String) throws {
+        throw KeychainError.notSupported
+    }
+    
     public func deleteAll() throws {
         let query: [String: Any] = [
             kSecClass            as String: kSecClassGenericPassword,
@@ -89,27 +128,11 @@ public class KeychainStorage: IStorage {
         ]
         try delete(query as CFDictionary)
     }
-    
-    private func delete(_ query: CFDictionary) throws {
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query, &item)
-        
-        switch status {
-        case errSecItemNotFound:
-            return
-
-        case errSecSuccess:
-            let status = SecItemDelete(query)
-            if status != errSecSuccess { throw KeychainError.deleteError(error: status) }
-
-        default:
-            throw KeychainError.unhandled(error: status)
-        }
-    }
 }
 
 public enum KeychainError: Error {
     case unexpectedPasswordData
     case unhandled(error: OSStatus)
     case deleteError(error: OSStatus)
+    case notSupported
 }
