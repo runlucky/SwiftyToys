@@ -53,16 +53,16 @@ public final class Logger: ObservableObject {
     }
     
     internal func deleteAllLogs() {
-        try? URL.logs.delete()
-        try? URL.logsBackup.delete()
+        try? URL.log.delete()
+        try? URL.logBackup.delete()
         self.logs = []
     }
     
     internal func getLogURL() -> [URL] {
-        if FileManager.default.fileExists(atPath: URL.logsBackup.path) {
-            return [.logs, .logsBackup]
+        if FileManager.default.fileExists(atPath: URL.logBackup.path) {
+            return [.log, .logBackup]
         }
-        return [.logs]
+        return [.log]
     }
 
 }
@@ -71,10 +71,10 @@ extension Logger {
     private func fileLog(_ log: Log) {
         let text = "\(log.timestamp.toString(.UTC, format: "yyyy-MM-dd HH:mm:ss.SSS")), \(log.level.rawValue), \(log.file), \(log.line), \(log.function), \(log.message)"
         
-        if sizeCheck(fileUrl: URL.logs) ?? 0 >= UInt64(10.MB) {
-            move(from: URL.logs, dest: URL.logsBackup)
+        if sizeCheck(fileUrl: .log) ?? 0 >= UInt64(10.MB) {
+            move(from: .log, dest: .logBackup)
         }
-        guard let stream = OutputStream(url: URL.logs, append: true),
+        guard let stream = OutputStream(url: .log, append: true),
               let text = (text + "\n").data(using: .utf8) else { return }
         
         stream.open()
@@ -107,8 +107,9 @@ extension Logger {
 }
 
 extension URL {
-    fileprivate static var logs: URL { root.appendingPathComponent("logs.txt") }
-    fileprivate static var logsBackup: URL { root.appendingPathComponent("logs_old.txt") }
+    private static var logs: URL { try! appSupport.add(folder: "Log") }
+    fileprivate static var log: URL { logs.appendingPathComponent("log.txt") }
+    fileprivate static var logBackup: URL { logs.appendingPathComponent("log_old.txt") }
 }
 
 

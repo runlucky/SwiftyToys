@@ -20,6 +20,10 @@ extension URL {
         try FileManager.default.removeItem(at: self)
     }
 
+    public static var home: URL { URL(string: NSHomeDirectory())! }
+    public static var document: URL { FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first! }
     public static var library: URL { FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first! }
-    public static var root: URL { library.appendingPathComponent(AppSettings.shared.bundleIdentifier) }
+    public static var caches: URL { FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first! }
+    /// /Library/{bundleIdentifier}
+    public static var appSupport: URL { try! library.add(folder: AppSettings.shared.bundleIdentifier) }
 }
