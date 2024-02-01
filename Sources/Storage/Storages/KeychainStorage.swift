@@ -31,13 +31,13 @@ public class KeychainStorage {
 }
 
 extension KeychainStorage: IStorage {
-    public func upsert<T: Codable>(key: String, value: T) throws {
+    public func upsert<T: Codable>(_ key: StorageKey, value: T) throws {
         let data = try JSONEncoder().encode(value)
         
         let query: [String: Any] = [
             kSecClass              as String: kSecClassGenericPassword,
             kSecAttrLabel          as String: bundleIdentifier,
-            kSecAttrService        as String: "\(bundleIdentifier).\(key)",
+            kSecAttrService        as String: "\(bundleIdentifier).\(key.toString())",
             kSecAttrAccount        as String: account,
             kSecValueData          as String: data,
             kSecAttrAccessible     as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
@@ -58,15 +58,11 @@ extension KeychainStorage: IStorage {
         }
     }
     
-    public func upsert<T: Codable>(folder: String, key: String, value: T) throws {
-        try upsert(key: "\(folder).\(key)", value: value)
-    }
-    
-    public func get<T: Codable>(key: String, type: T.Type) throws -> T {
+    public func get<T: Codable>(_ key: StorageKey, type: T.Type) throws -> T {
         let query: [String: Any] = [
             kSecClass              as String: kSecClassGenericPassword,
             kSecAttrLabel          as String: bundleIdentifier,
-            kSecAttrService        as String: "\(bundleIdentifier).\(key)",
+            kSecAttrService        as String: "\(bundleIdentifier).\(key.toString())",
             kSecAttrAccount        as String: account,
             kSecMatchLimit         as String: kSecMatchLimitOne,
             kSecReturnAttributes   as String: true,
@@ -80,7 +76,7 @@ extension KeychainStorage: IStorage {
         
         switch status {
         case errSecItemNotFound:
-            throw StorageError.notFound(key: key)
+            throw StorageError.notFound(key: key.toString())
 
         case errSecSuccess:
             guard let item = item,
@@ -94,31 +90,19 @@ extension KeychainStorage: IStorage {
         }
     }
 
-    public func get<T: Codable>(folder: String, key: String, type: T.Type) throws -> T {
-        try get(key: "\(folder).\(key)", type: type)
-    }
-    
-    public func gets<T: Codable>(folder: String, type: T.Type) throws -> [T] {
+    public func getKeys(folder: String) throws -> [StorageKey] {
         throw KeychainError.notSupported
     }
     
 
-    public func delete(key: String) throws {
+    public func delete(_ key: StorageKey) throws {
         let query: [String: Any] = [
             kSecClass            as String: kSecClassGenericPassword,
             kSecAttrLabel        as String: bundleIdentifier,
-            kSecAttrService      as String: "\(bundleIdentifier).\(key)",
+            kSecAttrService      as String: "\(bundleIdentifier).\(key.toString())",
             kSecAttrAccount      as String: account,
         ]
         try delete(query as CFDictionary)
-    }
-    
-    public func delete(folder: String, key: String) throws {
-        try delete(key: "\(folder).\(key)")
-    }
-    
-    public func deletes(folder: String) throws {
-        throw KeychainError.notSupported
     }
     
     public func deleteAll() throws {
@@ -136,3 +120,4 @@ public enum KeychainError: Error {
     case deleteError(error: OSStatus)
     case notSupported
 }
+

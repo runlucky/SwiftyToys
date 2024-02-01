@@ -13,46 +13,27 @@ public struct UserDefaultsStorage {
 }
 
 extension UserDefaultsStorage: IStorage {
-    public func upsert<T: Codable>(key: String, value: T) throws {
+    public func upsert<T: Codable>(_ key: StorageKey, value: T) throws {
         let data = try JSONEncoder().encode(value)
-        userDefaults.set(data, forKey: key)
+        userDefaults.set(data, forKey: key.toString())
     }
 
-    public func upsert<T: Codable>(folder: String, key: String, value: T) throws {
-        try upsert(key: "\(folder)/\(key)", value: value)
-    }
-    
-    
-    public func get<T: Codable>(key: String, type: T.Type) throws -> T {
-        guard let data = userDefaults.data(forKey: key) else { throw StorageError.notFound(key: key)  }
+    public func get<T: Codable>(_ key: StorageKey, type: T.Type) throws -> T {
+        guard let data = userDefaults.data(forKey: key.toString()) else {
+            throw StorageError.notFound(key: key.toString())
+        }
         return try JSONDecoder().decode(type, from: data)
     }
 
-    
-    public func get<T: Codable>(folder: String, key: String, type: T.Type) throws -> T {
-        try get(key: "\(folder)/\(key)", type: type)
-    }
-    
-    public func gets<T: Codable>(folder: String, type: T.Type) throws -> [T] {
+    public func getKeys(folder: String) throws -> [StorageKey] {
         userDefaults.dictionaryRepresentation().compactMap { key, value in
-            guard key.hasPrefix("\(folder)/"),
-                  let value = value as? Data else { return nil }
-            return try? JSONDecoder().decode(type, from: value)
+            guard key.hasPrefix("\(folder).") else { return nil }
+            return StorageKey(folder: folder, file: key.replace(pattern: "\(folder).", to: ""))
         }
     }
     
-    public func delete(key: String) throws {
-        userDefaults.removeObject(forKey: key)
-    }
-    
-    public func delete(folder: String, key: String) throws {
-        try delete(key: "\(folder)/\(key)")
-    }
-    
-    public func deletes(folder: String) throws {
-        userDefaults.dictionaryRepresentation()
-            .filter { $0.key.hasPrefix("\(folder)/") }
-            .forEach { userDefaults.removeObject(forKey: $0.key) }
+    public func delete(_ key: StorageKey) throws {
+        userDefaults.removeObject(forKey: key.toString())
     }
     
     public func deleteAll() throws {
