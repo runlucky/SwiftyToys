@@ -30,7 +30,7 @@ extension MemoryStorage: IStorage {
     public func getKeys(folder: String) throws -> [StorageKey] {
         queue.sync {
             storage.filter { key, value in key.hasPrefix("\(folder).") }
-                   .map { key, value in StorageKey(folder: folder, file: key) }
+                .map { key, value in StorageKey(folder: folder, file: key.replace(pattern: "\(folder).", to: "")) }
         }
     }
     
