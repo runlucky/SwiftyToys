@@ -41,6 +41,12 @@ extension FileStorage: IStorage {
         let url = try toURL(key)
         guard fileManager.fileExists(atPath: url.path) else { throw StorageError.notFound(key: url.absoluteString) }
         let data = try Data(contentsOf: url)
+        
+        // typeが Data型だった場合はdecodeせずにそのまま返す
+        if type == Data.self {
+            return data as! T
+        }
+        
         return try JSONDecoder().decode(type, from: data)
     }
 
