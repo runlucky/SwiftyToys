@@ -7,8 +7,8 @@ let package = Package(
     name: "SwiftyToys",
     
     platforms: [
-        .iOS(.v14),
-        .macOS(.v11),
+        .iOS(.v16),
+        .macOS(.v13),
     ],
     
     products: [

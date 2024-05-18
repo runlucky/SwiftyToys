@@ -1,83 +1,51 @@
 import SwiftUI
 
-internal struct LogSettingView: View {
-    private let viewModel = Logger.shared
-    @State private var showShareSheet = false
-    @Binding private var show: Bool
-
-    @AppStorage("LogSetting.level") private var logLevel: LogLevel = .defaultItem
-    @AppStorage("LogSetting.UUID") private var logUUID: LogUUID = .defaultItem
-    @AppStorage("LogSetting.date") private var logDate: LogDate = .defaultItem
-
-
-    internal init(_ show: Binding<Bool>) {
-        self._show = show
-    }
-
-    internal var body: some View {
-        List {
-            Section(header: Text("表示設定")) {
-                row($logLevel)
-                row($logUUID)
-                row($logDate)
-            }
-
-            Button("ログ共有") {
-                showShareSheet = true
-            }
-            .sheet(isPresented: $showShareSheet) {
-                ShareSheetView(activityItems: viewModel.getLogURL())
-            }
-
-            Button("表示クリア") {
-                viewModel.clearOnMemoryLogs()
-                show = false
-            }
-
-            Button("ログファイル削除") {
-                viewModel.deleteAllLogs()
-                show = false
-            }
-            .foregroundColor(.red)
-        }
-    }
+public struct LogSettingView: View {
+    @Binding var showSettingView: Bool
     
-    private func row<T: IPickerItem>(_ item: Binding<T>) -> some View {
-        HStack {
-            Text(T.title)
-            Spacer()
-            PickerView(item)
-                .pickerStyle(.segmented)
-                .frame(width: 150)
+    @Binding var showTimestamp: Bool
+    @Binding var showLevel: Bool
+    @Binding var showFile: Bool
+    @Binding var showLine: Bool
+    @Binding var showFunction: Bool
+    
+    @Binding var lineLimit: Int
+    @Binding var fontSize: Int
+    
+    public init(showSettingView: Binding<Bool>, showTimestamp: Binding<Bool>, showLevel: Binding<Bool>, showFile: Binding<Bool>, showLine: Binding<Bool>, showFunction: Binding<Bool>, lineLimit: Binding<Int>, fontSize: Binding<Int>) {
+        self._showSettingView = showSettingView
+        self._showTimestamp = showTimestamp
+        self._showLevel = showLevel
+        self._showFile = showFile
+        self._showLine = showLine
+        self._showFunction = showFunction
+        self._lineLimit = lineLimit
+        self._fontSize = fontSize
+    }
+
+    public var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Toggle("時刻", isOn: $showTimestamp)
+                    Toggle("ログレベル", isOn: $showLevel)
+                    Toggle("ファイル", isOn: $showFile)
+                    Toggle("行", isOn: $showLine)
+                    Toggle("メソッド名", isOn: $showFunction)
+                }
+                
+                Section {
+                    Stepper("最大表示行数: \(lineLimit == 0 ? "nil" : lineLimit.description)", value: $lineLimit, in: 0...5)
+                    Stepper("フォントサイズ: \(fontSize.description)", value: $fontSize, in: 6...24)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("閉じる") { showSettingView = false }
+                }
+            }
+            .navigationTitle("表示設定")
         }
     }
 }
 
-
-
-enum LogLevel: String, IPickerItem {
-    case info
-    case debug
-    
-    static var title: String = "ログ表示レベル"
-    static var defaultItem: LogLevel = .info
-    var displayName: String { self.rawValue }
-}
-
-enum LogUUID: String, IPickerItem {
-    case visible
-    case hidden
-    
-    static var title: String = "UUID"
-    static var defaultItem: LogUUID = .hidden
-    var displayName: String { self.rawValue }
-}
-
-enum LogDate: String, IPickerItem {
-    case visible
-    case hidden
-    
-    static var title: String = "年月日"
-    static var defaultItem: LogDate = .hidden
-    var displayName: String { self.rawValue }
-}
