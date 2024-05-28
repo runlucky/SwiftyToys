@@ -12,6 +12,7 @@ extension Collection {
         !self.isEmpty
     }
     
+    /// 重複した要素を削除して返します
     public func uniqued() -> [Element] where Element: Hashable {
         Array(Set(self))
     }
