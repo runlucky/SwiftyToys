@@ -2,7 +2,9 @@ import Foundation
 
 extension Error {
     public func dump() -> String {
-        let e = self as NSError
-        return "domain: \(e.domain.replace(pattern: ".*\\.", to: "")), code: \(e.code), type: \(self), description: \(e.localizedDescription)"
+        "domain: \(domain), code: \(code), description: \(localizedDescription)"
     }
+
+    public var domain: String { (self as NSError).domain.replacing(/.*\./, with: "") }
+    public var code: Int { (self as NSError).code }
 }

@@ -8,7 +8,7 @@
 import Foundation
 
 extension Collection {
-    @inlinable public var hasElement: Bool {
+    @inlinable public var hasElements: Bool {
         !self.isEmpty
     }
     

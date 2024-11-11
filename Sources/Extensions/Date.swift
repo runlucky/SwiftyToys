@@ -28,4 +28,9 @@ extension Date {
     public func isWithIn(_ time: TimeInterval) -> Bool {
         !elapses(moreThan: time)
     }
+    
+    /// 経過した時間
+    public var elapsedTime: TimeInterval {
+        -self.timeIntervalSinceNow
+    }
 }
