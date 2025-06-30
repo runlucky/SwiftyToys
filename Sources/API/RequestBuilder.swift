@@ -53,7 +53,8 @@ public class RequestBuilder {
             let response = APIResponse(body: data, response: urlResponse)
 
             logging(.info, "\(url), response(\(response.statusCode?.description ?? "nil")), \(round(start.elapsedTime * 1000) / 1000) s, \(response.body.count) bytes")
-            guard response.statusCode == 200 else {
+            guard let statusCode = response.statusCode,
+                  (200...299).contains(statusCode) else {
                 throw Error.badResponse(response)
             }
 
