@@ -41,50 +41,26 @@ public class RequestBuilder {
         return self
     }
 
-    public func request() async throws -> APIResponse {
-        let start = Date()
-
+    public func request() async throws(RequestBuilderError) -> APIResponse {
         let request = try build()
-        let url = request.url?.absoluteString ?? "nil"
+        let response = try await sendRequest(request)
 
-
-        do {
-            let (data, urlResponse) = try await URLSession.shared.data(for: request)
-            let response = APIResponse(body: data, response: urlResponse)
-
-            logging(.info, "\(url), response(\(response.statusCode?.description ?? "nil")), \(round(start.elapsedTime * 1000) / 1000) s, \(response.body.count) bytes")
-            guard let statusCode = response.statusCode,
-                  (200...299).contains(statusCode) else {
-                throw Error.badResponse(response)
-            }
-
-            return response
-
-        } catch {
-            logging(.warning, "\(url), error \(error.dump()), \(round(start.elapsedTime * 1000) / 1000) s,")
-            switch (error.domain, error.code) {
-            case (NSURLErrorDomain, NSURLErrorNotConnectedToInternet): throw Error.offline
-            case (NSURLErrorDomain, NSURLErrorTimedOut              ): throw Error.offline // タイムアウトもオフライン扱いにする
-            case (NSURLErrorDomain, NSURLErrorNetworkConnectionLost ): throw Error.offline // 接続が切れた場合もオフライン扱いにする
-            default: throw error
-            }
+        guard let statusCode = response.statusCode,
+              (200...299).contains(statusCode) else {
+            throw .badResponse(response)
         }
 
+        return response
     }
 
-
-    private func getStatusCode(_ response: URLResponse) -> Int? {
-        (response as? HTTPURLResponse)?.statusCode
-    }
-
-    private func build() throws -> URLRequest {
+    private func build() throws(RequestBuilderError) -> URLRequest {
         var component = URLComponents()
         component.scheme = scheme
         component.host = host
         component.path = path
         component.queryItems?.append(contentsOf: queries)
 
-        guard let url = component.url else { throw Error.invalidRequestURL }
+        guard let url = component.url else { throw .invalidRequestURL }
 
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
@@ -96,13 +72,43 @@ public class RequestBuilder {
 
         return request
     }
+    
+    private func sendRequest(_ request: URLRequest) async throws(RequestBuilderError) -> APIResponse {
+        let start = Date()
+        let url = request.url?.absoluteString ?? "nil"
 
+        do {
+            let (data, urlResponse) = try await URLSession.shared.data(for: request)
+            let response = APIResponse(body: data, response: urlResponse)
+            logging(.info, "\(url), response(\(response.statusCode?.description ?? "nil")), \(round(start.elapsedTime * 1000) / 1000) s, \(response.body.count) bytes")
+
+            return response
+            
+        } catch {
+            let url = request.url?.absoluteString ?? "nil"
+            logging(.warning, "\(url), error \(error.dump()), \(round(start.elapsedTime * 1000) / 1000) s,")
+            switch (error.domain, error.code) {
+            case (NSURLErrorDomain, NSURLErrorNotConnectedToInternet): throw .offline
+            case (NSURLErrorDomain, NSURLErrorTimedOut              ): throw .offline // タイムアウトもオフライン扱いにする
+            case (NSURLErrorDomain, NSURLErrorNetworkConnectionLost ): throw .offline // 接続が切れた場合もオフライン扱いにする
+            default: throw .unknown(error)
+            }
+        }
+    }
 }
 
-extension RequestBuilder {
-    public enum Error: Swift.Error {
-        case badResponse(APIResponse)
-        case offline
-        case invalidRequestURL
+public enum RequestBuilderError: LocalizedError {
+    case badResponse(APIResponse)
+    case offline
+    case invalidRequestURL
+    case unknown(Error)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .badResponse(let response): "code: \(response.statusCode?.description ?? "nil"), body: \(response.stringBody ?? "nil")"
+        case .offline                  : "オフラインです"
+        case .invalidRequestURL        : "無効なリクエストです"
+        case .unknown(let error)       : "不明なエラーです, \(error.dump())"
+        }
     }
 }
