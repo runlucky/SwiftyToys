@@ -7,5 +7,8 @@ final class SwiftyToysTests: XCTestCase {
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
         XCTAssertEqual(SwiftyToys().text, "Hello, World!")
+        
+        
+        
     }
 }

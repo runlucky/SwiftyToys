@@ -9,4 +9,8 @@ extension String {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return "" }
         return regex.stringByReplacingMatches(in: self, options: [], range: NSRange(location: 0, length: self.length), withTemplate: to)
     }
+    
+    public func decode<T: Decodable>(_ type: T.Type) throws -> T {
+        try JSONDecoder().decode(T.self, from: Data(self.utf8))
+    }
 }

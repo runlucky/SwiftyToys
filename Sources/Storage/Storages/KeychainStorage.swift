@@ -32,7 +32,7 @@ public class KeychainStorage {
 
 extension KeychainStorage: IStorage {
     public func upsert<T: Codable>(_ key: StorageKey, value: T) throws {
-        let data = try JSONEncoder().encode(value)
+        let data = try value.encode()
         
         let query: [String: Any] = [
             kSecClass              as String: kSecClassGenericPassword,
@@ -83,7 +83,7 @@ extension KeychainStorage: IStorage {
                   let value = item[kSecValueData as String] as? Data else {
                 throw KeychainError.unexpectedPasswordData
             }
-            return try JSONDecoder().decode(type, from: value)
+            return try value.decode(type)
 
         default:
             throw KeychainError.unhandled(error: status)

@@ -28,7 +28,7 @@ extension FileStorage: IStorage {
 
     public func upsert<T: Codable>(_ key: StorageKey, value: T) throws {
         let url = try toURL(key)
-        let data = try JSONEncoder().encode(value)
+        let data = try value.encode()
 
         let isSuccess = fileManager.createFile(atPath: url.path, contents: data)
         if !isSuccess {
@@ -47,7 +47,7 @@ extension FileStorage: IStorage {
             return data as! T
         }
         
-        return try JSONDecoder().decode(type, from: data)
+        return try data.decode(type)
     }
 
     public func getKeys(folder: String) throws -> [StorageKey] {

@@ -7,6 +7,6 @@ public struct APIResponse: Equatable {
     public var stringBody: String? { body.toString(.utf8) }
 
     public func decode<T: Codable>(_ type: T.Type) throws -> T {
-        try JSONDecoder().decode(type, from: body)
+        try body.decode(type)
     }
 }

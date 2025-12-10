@@ -10,7 +10,7 @@ public class MemoryStorage {
 
 extension MemoryStorage: IStorage {
     public func upsert<T: Codable>(_ key: StorageKey, value: T) throws {
-        let data = try JSONEncoder().encode(value)
+        let data = try value.encode()
         
         queue.async (flags: .barrier) {
             self.storage[key.toString()] = data
@@ -24,7 +24,7 @@ extension MemoryStorage: IStorage {
         }
         
         guard let data = data else { throw StorageError.notFound(key: key.toString()) }
-        return try JSONDecoder().decode(type, from: data)
+        return try data.decode(type)
     }
 
     public func getKeys(folder: String) throws -> [StorageKey] {

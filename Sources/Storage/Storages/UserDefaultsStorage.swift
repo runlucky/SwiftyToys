@@ -14,7 +14,7 @@ public struct UserDefaultsStorage {
 
 extension UserDefaultsStorage: IStorage {
     public func upsert<T: Codable>(_ key: StorageKey, value: T) throws {
-        let data = try JSONEncoder().encode(value)
+        let data = try value.encode()
         userDefaults.set(data, forKey: key.toString())
     }
 
@@ -22,7 +22,7 @@ extension UserDefaultsStorage: IStorage {
         guard let data = userDefaults.data(forKey: key.toString()) else {
             throw StorageError.notFound(key: key.toString())
         }
-        return try JSONDecoder().decode(type, from: data)
+        return try data.decode(type)
     }
 
     public func getKeys(folder: String) throws -> [StorageKey] {
