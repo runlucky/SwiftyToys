@@ -13,4 +13,14 @@ extension String {
     public func decode<T: Decodable>(_ type: T.Type) throws -> T {
         try JSONDecoder().decode(T.self, from: Data(self.utf8))
     }
+    
+    public func toDate(_ timeZone: TimeZone, format: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = format
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timeZone
+        
+        return formatter.date(from: self)
+    }
+
 }
